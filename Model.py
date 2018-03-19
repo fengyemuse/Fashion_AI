@@ -81,25 +81,26 @@ class Image_Model(model_para):
         model.summary()
         return model
 
-    def train_model(self, model, is_augumente=False):
+    def train_model(self, model, is_augumente=False,is_image_processed=False):
         train_dir = os.path.join(self.origin_dir, self.dirs[0])
         validate_dir = os.path.join(self.origin_dir, self.dirs[1])
         test_dir = os.path.join(self.origin_dir, self.dirs[2])
-
         image_processor = image_process()
-        image_processor.image_cut_glue()
+        if not is_image_processed:
+            image_processor.annotate_image()
+            image_processor.image_cut_glue()
 
         train_generator = image_processor.image_dataGen(train_dir,
                                                         batch_size=32,
-                                                        target_size=(150, 150),
+                                                        target_size=(self.input_shape[0], self.input_shape[1]),
                                                         data_augmentation=is_augumente)
         validation_generator = image_processor.image_dataGen(validate_dir,
                                                              batch_size=32,
-                                                             target_size=(150, 150),
+                                                             target_size=(self.input_shape[0], self.input_shape[1]),
                                                              data_augmentation=False)
         test_generator = image_processor.image_dataGen(test_dir,
                                                        batch_size=32,
-                                                       target_size=(150, 150),
+                                                       target_size=(self.input_shape[0], self.input_shape[1]),
                                                        data_augmentation=False
                                                        )
 
