@@ -6,22 +6,23 @@ import os
 
 
 class image_process(model_para):
-
     def annotate_image(self):
-
-        target_dict = {}
-        for i in range(self.datalen):
-            image = self.df.loc[i][0].split('/')[-1]
-            target = self.df.loc[i][2]
-            if target in target_dict.keys():
-                target_dict[target] += 1
-            else:
-                target_dict[target] = 1
-            target += '.' + str(target_dict[target]) + '.jpg'
-            src = os.path.join(self.origin_dir, image)
-            dst = os.path.join(self.origin_dir, target)
-            if os.path.exists(src):
-                os.rename(src=src, dst=dst)
+        labels_num = self.df['labels'].value_counts()
+        print('数据类别分布：', labels_num)
+        labels = labels_num.index
+        for i in range(len(labels_num)):
+            label = labels[i]
+            label_num = labels_num[i]
+            image_path = self.df[self.df['labels'] == label]
+            target_dict = {label: 1}
+            for image in image_path['picture']:
+                image = image.split('/')[-1]
+                target = label + '.' + str(target_dict[label]) + '.jpg'
+                target_dict[label] += 1
+                src = os.path.join(self.origin_dir, image)
+                dst = os.path.join(self.origin_dir, target)
+                if os.path.exists(src):
+                    os.rename(src=src, dst=dst)
 
     def image_cut_glue(self):
         '''
@@ -32,6 +33,7 @@ class image_process(model_para):
         :return:
         '''
 
+        ##########################
         data_file_manipulate = file_process(self.origin_dir)
         file_paths = dict()
         for file in self.files:

@@ -13,8 +13,9 @@ class model_para:
                                + 'data/warmup/Annotations/skirt_length_labels.csv'
         self.model_save_path = 'Fashion_AI.h5'
         self.df = pd.read_csv(self.annotation_path, header=None)
-        self.labels = '/' + self.df[2].unique()
-        self.image_name = self.df[2].unique() + '.{}.jpg'
+        self.df.columns = ('picture', 'tpyes', 'labels')
+        self.labels = '/' + self.df['labels'].unique()
+        self.image_name = self.df['labels'].unique() + '.{}.jpg'
         self.files = [x + y for x in self.dirs for y in self.labels]
         self.datalen = self.df.shape[0]
         self.data_split = [floor(self.datalen * 0.7),
