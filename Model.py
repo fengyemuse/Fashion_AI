@@ -88,18 +88,18 @@ class Image_Model(model_para):
         image_processor = image_process()
         if not is_image_processed:
             image_processor.annotate_image()
-            image_processor.image_cut_glue()
+
 
         train_generator = image_processor.image_dataGen(train_dir,
-                                                        batch_size=32,
+                                                        batch_size=self.batch_size,
                                                         target_size=(self.input_shape[0], self.input_shape[1]),
                                                         data_augmentation=is_augumente)
         validation_generator = image_processor.image_dataGen(validate_dir,
-                                                             batch_size=32,
+                                                             batch_size=self.batch_size,
                                                              target_size=(self.input_shape[0], self.input_shape[1]),
                                                              data_augmentation=False)
         test_generator = image_processor.image_dataGen(test_dir,
-                                                       batch_size=32,
+                                                       batch_size=self.batch_size,
                                                        target_size=(self.input_shape[0], self.input_shape[1]),
                                                        data_augmentation=False
                                                        )

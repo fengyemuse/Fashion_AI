@@ -1,53 +1,62 @@
-from file_process import file_process
 from model_train_para import model_para
 from keras.preprocessing.image import ImageDataGenerator
-
+from PIL import Image
 import os
+import numpy as np
 
 
 class image_process(model_para):
+
+    def create_file(self, file_name):
+        datafile = os.path.join(self.origin_dir, file_name)
+        if not os.path.exists(datafile):
+            os.makedirs(datafile)
+        return datafile
+
+    def copy_image(self, images, path):
+        for image in images:
+            src = os.path.join(self.origin_dir, image)
+            dst = os.path.join(path, image)
+            with Image.open(src) as img:
+                img = img.resize((self.input_shape[0], self.input_shape[1]), Image.ANTIALIAS)
+                img.save(dst)
+
     def annotate_image(self):
-        labels_num = self.df['labels'].value_counts()
-        print('数据类别分布：', labels_num)
-        labels = labels_num.index
-        for i in range(len(labels_num)):
-            label = labels[i]
-            label_num = labels_num[i]
-            image_path = self.df[self.df['labels'] == label]
-            target_dict = {label: 1}
-            for image in image_path['picture']:
-                image = image.split('/')[-1]
-                target = label + '.' + str(target_dict[label]) + '.jpg'
-                target_dict[label] += 1
-                src = os.path.join(self.origin_dir, image)
-                dst = os.path.join(self.origin_dir, target)
-                if os.path.exists(src):
-                    os.rename(src=src, dst=dst)
 
-    def image_cut_glue(self):
-        '''
-        主要是将图像剪切到指定的文件夹
-        :param image_name: 图像的名字
-        :param files: 拷贝的目标文件夹
-        :param data_split: 数据集
-        :return:
-        '''
-
-        ##########################
-        data_file_manipulate = file_process(self.origin_dir)
         file_paths = dict()
         for file in self.files:
-            file_paths[file] = data_file_manipulate.create_file(file)
+            file_paths[file] = self.create_file(file)
+        labels_distribution = self.df['labels'].value_counts()
+        print('数据类别分布：\n', labels_distribution)
+        labels = labels_distribution.index
+        for i in range(len(labels_distribution)):
+            label = labels[i]
+            label_num = labels_distribution[i]
+            image_path = self.df[self.df['labels'] == label]
+            image_names = np.array([image.split('/')[-1] for image in image_path['picture']])
+            np.random.shuffle(image_names)  # 打乱数据
+            train_path = os.path.join(self.origin_dir, self.files[i])
+            validate_path = os.path.join(self.origin_dir, self.files[i + len(labels_distribution)])
+            test_path = os.path.join(self.origin_dir, self.files[i + 2 * len(labels_distribution)])
+            if label_num < 3:  # 即无法分开数据
+                for name in image_names:
+                    src = os.path.join(self.origin_dir, name)
+                    if os.path.exists(src):
+                        with Image.open(src) as img:
+                            img = img.resize((self.input_shape[0], self.input_shape[1]), Image.ANTIALIAS)
+                            img.save(os.path.join(train_path, name))
+                            img.save(os.path.join(validate_path, name))
+                            img.save(os.path.join(test_path, name))
+            else:
+                test_image_num = max(round(self.data_split_ratio[2] * image_names.size), 1)
+                validate_image_num = max(round(self.data_split_ratio[1] * image_names.size), 1)
 
-        for i in range(len(self.image_name)):
-            train_image = [self.image_name[i].format(j) for j in range(self.data_split[0])]
-            data_file_manipulate.cut_image_to_file(train_image, file_paths[self.files[i]])
-            validate_image = [self.image_name[i].format(j) for j in
-                              range(self.data_split[0], self.data_split[0] + self.data_split[1])]
-            data_file_manipulate.cut_image_to_file(validate_image, file_paths[self.files[i + len(self.image_name)]])
-            test_image = [self.image_name[i].format(j) for j in
-                          range(self.data_split[0] + self.data_split[1], sum(self.data_split))]
-            data_file_manipulate.cut_image_to_file(test_image, file_paths[self.files[i + 2 * len(self.image_name)]])
+                test_image = image_names[:test_image_num]
+                validate_image = image_names[test_image_num:test_image_num + validate_image_num]
+                train_image = image_names[test_image_num + validate_image_num:]
+                self.copy_image(test_image, test_path)
+                self.copy_image(validate_image, validate_path)
+                self.copy_image(train_image, train_path)
 
     def image_dataGen(self, directory, target_size, batch_size, data_augmentation=False):
         '''
