@@ -4,8 +4,9 @@ import pandas as pd
 
 class model_para:
     def __init__(self):
-        self.input_shape = (256, 256, 3)
+        self.input_shape = (128, 128, 3)
         self.batch_size = 32
+        self.epoch=50
         self.label_types = 'categorical'  # 'categorical','binary'
         self.dirs = ['train', 'validation', 'test']
         self.origin_dir = __file__.split(sep='code')[0] \
