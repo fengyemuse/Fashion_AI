@@ -67,7 +67,7 @@ class Image_Model(model_para):
         model.add(layers.Flatten())
         model.add(layers.Dropout(0.5))
         model.add(layers.Dense(512, activation='relu',
-                               kernel_regularizer=regularizers.l2(0.)))
+                               kernel_regularizer=regularizers.l2(0.1)))
         if len(self.labels) == 2:  # 2分类
             model.add(layers.Dense(1, activation='sigmoid'))
             model.compile(loss='binary_crossentropy',

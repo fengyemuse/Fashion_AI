@@ -7,7 +7,7 @@ class model_para:
         self.input_shape = (128, 128, 3)
         self.batch_size = 32
         self.steps_per_epoch=1000
-        self.epoch=50
+        self.epoch=30
         self.label_types = 'categorical'  # 'categorical','binary'
         self.dirs = ['train', 'validation', 'test']
         self.origin_dir = __file__.split(sep='code')[0] \
@@ -19,5 +19,5 @@ class model_para:
         self.df.columns = ('picture', 'tpyes', 'labels')
         self.labels = '/' + self.df['labels'].unique()
         self.files = [x + y for x in self.dirs for y in self.labels]
-        self.data_split_ratio = [0.7, 0.15, 0.15]  # 训练集，验证集，测试集
+        self.data_split_ratio = [0.8, 0.1, 0.1]  # 训练集，验证集，测试集
 
