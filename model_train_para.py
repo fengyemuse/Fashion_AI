@@ -6,6 +6,7 @@ class model_para:
     def __init__(self):
         self.input_shape = (128, 128, 3)
         self.batch_size = 32
+        self.steps_per_epoch=1000
         self.epoch=50
         self.label_types = 'categorical'  # 'categorical','binary'
         self.dirs = ['train', 'validation', 'test']

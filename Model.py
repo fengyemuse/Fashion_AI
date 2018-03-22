@@ -105,7 +105,7 @@ class Image_Model(model_para):
                                                        )
 
         history = model.fit_generator(train_generator,
-                                      steps_per_epoch=1000,
+                                      steps_per_epoch=self.steps_per_epoch,
                                       epochs=self.epoch,
                                       validation_data=validation_generator,
                                       validation_steps=50)
