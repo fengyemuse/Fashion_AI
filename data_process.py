@@ -32,7 +32,7 @@ class image_process(model_para):
         for i in range(len(labels_distribution)):
             label = labels[i]
             label_num = labels_distribution[i]
-            image_path = self.df[self.df['labels'] == label]
+            image_path = self.df[self.df['labels'] == label]   # 这里最好用pd.groupby('labels')来处理
             image_names = np.array([image.split('/')[-1] for image in image_path['picture']])
             np.random.shuffle(image_names)  # 打乱数据
             train_path = os.path.join(self.origin_dir, self.files[i])
