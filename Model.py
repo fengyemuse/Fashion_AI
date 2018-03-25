@@ -2,32 +2,13 @@ from keras import layers
 from keras import models
 from keras import optimizers
 from keras import regularizers
-from keras.models import load_model
 from data_process import image_process
-from model_train_para import model_para
+from model_select import model_select
 import matplotlib.pyplot as plt
 import os
 
 
-class Image_Model(model_para):
-
-    def VGG16_Fine_tune(self, trainable_layer):
-        from keras.applications import VGG16
-        conv_base = VGG16(weights='imagenet',
-                          include_top=False,
-                          input_shape=self.input_shape)
-
-        # 目前先试用VGG16，后面再添加别的模型
-        conv_base.trainable = True
-        set_trainable = False
-        for layer in conv_base.layers:
-            if layer.name == trainable_layer:
-                set_trainable = True
-            if set_trainable:
-                layer.trainable = True
-            else:
-                layer.trainable = False
-        return conv_base
+class Image_Model(model_select):
 
     def create_model(self, base_model=None):
         '''
@@ -43,31 +24,30 @@ class Image_Model(model_para):
                 MobileNet	         17MB	0.665	      0.871	      4,253,864	    88
                 ps:上面的数据可能不是很准确，我没有验证
         '''
-
         model = models.Sequential()
-        if base_model is not None:
-            if base_model == 'VGG16':
-                # 目前先试用VGG16，后面再添加别的模型
-                conv_base = self.VGG16_Fine_tune(trainable_layer='block5_conv1')
-                model.add(conv_base)
+        if base_model not in self.model_name:
+            model = self.default_model(model)
         else:
-            model.add(layers.Conv2D(32, (3, 3), activation='relu',
-                                    input_shape=self.input_shape))
-            model.add(layers.MaxPooling2D((2, 2)))
-
-            model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-            model.add(layers.MaxPooling2D((2, 2)))
-
-            model.add(layers.Conv2D(128, (3, 3), activation='relu'))
-            model.add(layers.MaxPooling2D((2, 2)))
-
-            model.add(layers.Conv2D(128, (3, 3), activation='relu'))
-            model.add(layers.MaxPooling2D((2, 2)))
+            if base_model == 'VGG16':
+                conv_base = self.VGG16()
+                conv_base = self.fine_tune_layers('block5_conv1', conv_base)
+                model.add(conv_base)
+            elif base_model == 'IncetionResNetV2':
+                conv_base = self.IncetionResNetV2()
+                model.add(conv_base)
+            elif base_model == 'InceptionV3':
+                conv_base = self.InceptionV3()
+                model.add(conv_base)
+            elif base_model == 'MobileNet':
+                conv_base, alpha = self.MobileNet()
+                model.add(conv_base)
+                model.add(layers.Reshape((1, 1, int(1024 * alpha))))
 
         model.add(layers.Flatten())
         model.add(layers.Dropout(0.5))
         model.add(layers.Dense(512, activation='relu',
                                kernel_regularizer=regularizers.l2(0.1)))
+
         if len(self.labels) == 2:  # 2分类
             model.add(layers.Dense(1, activation='sigmoid'))
             model.compile(loss='binary_crossentropy',
@@ -75,20 +55,23 @@ class Image_Model(model_para):
                           metrics=['acc'])
         else:  # 多分类
             model.add(layers.Dense(len(self.labels), activation='softmax'))
+            # model.compile(loss='categorical_crossentropy',
+            #               optimizer=optimizers.RMSprop(lr=2e-3),
+            #               metrics=['acc'])
+            sgd = optimizers.SGD(lr=2e-3, momentum=0.9, decay=1e-3, nesterov=False)
             model.compile(loss='categorical_crossentropy',
-                          optimizer=optimizers.RMSprop(lr=1e-5),
+                          optimizer=sgd,
                           metrics=['acc'])
         model.summary()
         return model
 
-    def train_model(self, model, is_augumente=False,is_image_processed=False):
+    def train_model(self, model, is_augumente=False, is_image_processed=False):
         train_dir = os.path.join(self.origin_dir, self.dirs[0])
         validate_dir = os.path.join(self.origin_dir, self.dirs[1])
         test_dir = os.path.join(self.origin_dir, self.dirs[2])
         image_processor = image_process()
         if not is_image_processed:
             image_processor.annotate_image()
-
 
         train_generator = image_processor.image_dataGen(train_dir,
                                                         batch_size=self.batch_size,
@@ -136,7 +119,15 @@ class Image_Model(model_para):
         ax2.legend()
         plt.show()
 
-    def model_load(self):
-        model = load_model(self.model_save_path)
+    def model_load(self, load_model=None):
+        if load_model == 'mobilenet':
+            from keras.utils.generic_utils import CustomObjectScope
+            import keras
+
+            with CustomObjectScope({'relu6': keras.applications.mobilenet.relu6,
+                                    'DepthwiseConv2D': keras.applications.mobilenet.DepthwiseConv2D}):
+                model = load_model(self.model_save_path)
+        else:
+            model = load_model(self.model_save_path)
         model.summary()
         return model

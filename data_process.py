@@ -32,7 +32,7 @@ class image_process(model_para):
         for i in range(len(labels_distribution)):
             label = labels[i]
             label_num = labels_distribution[i]
-            image_path = self.df[self.df['labels'] == label]   # 这里最好用pd.groupby('labels')来处理
+            image_path = self.df[self.df['labels'] == label]  # 这里最好用pd.groupby('labels')来处理
             '''for name,group in df.groupby('labels'):  
                     print(name)  
                     print(group) 
@@ -61,6 +61,15 @@ class image_process(model_para):
                 self.copy_image(test_image, test_path)
                 self.copy_image(validate_image, validate_path)
                 self.copy_image(train_image, train_path)
+
+    def random_crop(x, random_crop_size, sync_seed=None, **kwargs):
+        np.random.seed(sync_seed)
+        w, h = x.shape[0], x.shape[1]
+        rangew = (w - random_crop_size[0]) // 2
+        rangeh = (h - random_crop_size[1]) // 2
+        offsetw = 0 if rangew == 0 else np.random.randint(rangew)
+        offseth = 0 if rangeh == 0 else np.random.randint(rangeh)
+        return x[offsetw:offsetw + random_crop_size[0], offseth:offseth + random_crop_size[1], :]
 
     def image_dataGen(self, directory, target_size, batch_size, data_augmentation=False):
         '''
