@@ -10,6 +10,7 @@ class model_para:
         self.epoch = 3
         self.label_types = 'categorical'  # 'categorical','binary'
         self.model_name = ('VGG16', 'IncetionResNetV2', 'InceptionV3', 'MobileNet')
+        # 目前可以调用这几个模型，后面可以继续添加
         self.dirs = ['train', 'validation', 'test']
         self.origin_dir = os.path.split(__file__)[0] \
                           + '/data/warmup/Images/skirt_length_labels/'
