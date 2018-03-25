@@ -1,11 +1,10 @@
-from keras import layers
-from keras import models
-from keras import optimizers
-from keras import regularizers
+from keras.models import load_model
 from data_process import image_process
 from model_select import model_select
+from sklearn.metrics import confusion_matrix  # 导入混淆矩阵函数
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 
 class Image_Model(model_select):
@@ -24,44 +23,21 @@ class Image_Model(model_select):
                 MobileNet	         17MB	0.665	      0.871	      4,253,864	    88
                 ps:上面的数据可能不是很准确，我没有验证
         '''
-        model = models.Sequential()
-        if base_model not in self.model_name:
-            model = self.default_model(model)
+
+        if base_model == 'VGG16':
+            model = self.VGG16()
+
+        elif base_model == 'IncetionResNetV2':
+            model = self.IncetionResNetV2()
+
+        elif base_model == 'InceptionV3':
+            model = self.InceptionV3()
+
+        elif base_model == 'MobileNet':
+            model = self.MobileNet()
         else:
-            if base_model == 'VGG16':
-                conv_base = self.VGG16()
-                conv_base = self.fine_tune_layers('block5_conv1', conv_base)
-                model.add(conv_base)
-            elif base_model == 'IncetionResNetV2':
-                conv_base = self.IncetionResNetV2()
-                model.add(conv_base)
-            elif base_model == 'InceptionV3':
-                conv_base = self.InceptionV3()
-                model.add(conv_base)
-            elif base_model == 'MobileNet':
-                conv_base, alpha = self.MobileNet()
-                model.add(conv_base)
-                model.add(layers.Reshape((1, 1, int(1024 * alpha))))
+            model = self.default_model()
 
-        model.add(layers.Flatten())
-        model.add(layers.Dropout(0.5))
-        model.add(layers.Dense(512, activation='relu',
-                               kernel_regularizer=regularizers.l2(0.1)))
-
-        if len(self.labels) == 2:  # 2分类
-            model.add(layers.Dense(1, activation='sigmoid'))
-            model.compile(loss='binary_crossentropy',
-                          optimizer=optimizers.RMSprop(lr=1e-5),
-                          metrics=['acc'])
-        else:  # 多分类
-            model.add(layers.Dense(len(self.labels), activation='softmax'))
-            # model.compile(loss='categorical_crossentropy',
-            #               optimizer=optimizers.RMSprop(lr=2e-3),
-            #               metrics=['acc'])
-            sgd = optimizers.SGD(lr=2e-3, momentum=0.9, decay=1e-3, nesterov=False)
-            model.compile(loss='categorical_crossentropy',
-                          optimizer=sgd,
-                          metrics=['acc'])
         model.summary()
         return model
 
@@ -74,15 +50,15 @@ class Image_Model(model_select):
             image_processor.annotate_image()
 
         train_generator = image_processor.image_dataGen(train_dir,
-                                                        batch_size=self.batch_size,
+                                                        batch_size=self.train_batch_size,
                                                         target_size=(self.input_shape[0], self.input_shape[1]),
                                                         data_augmentation=is_augumente)
         validation_generator = image_processor.image_dataGen(validate_dir,
-                                                             batch_size=self.batch_size,
+                                                             batch_size=self.val_batch_size,
                                                              target_size=(self.input_shape[0], self.input_shape[1]),
                                                              data_augmentation=False)
         test_generator = image_processor.image_dataGen(test_dir,
-                                                       batch_size=self.batch_size,
+                                                       batch_size=self.test_batch_size,
                                                        target_size=(self.input_shape[0], self.input_shape[1]),
                                                        data_augmentation=False
                                                        )
@@ -91,14 +67,22 @@ class Image_Model(model_select):
                                       steps_per_epoch=self.steps_per_epoch,
                                       epochs=self.epoch,
                                       validation_data=validation_generator,
-                                      validation_steps=50)
-        test_loss, test_acc = model.evaluate_generator(test_generator, steps=50)
+                                      validation_steps=20)
+        test_loss, test_acc = model.evaluate_generator(test_generator, steps=20)
         print('test_loss:', test_loss)
         print('test_acc', test_acc)
         model.save(self.model_save_path)
-        return history
 
-    def train_validation_result_plot(self, history):
+        predicted_sample = []
+        true_sample = []
+        for i in range(10):
+            data = test_generator.next()
+            predicted_sample.extend(model.predict(data[0]))
+            true_sample.extend(data[1])
+
+        return history, true_sample, predicted_sample
+
+    def train_validation_result_plot(self, history, true_sample, predicted_sample, ):
         acc = history.history['acc']
         val_acc = history.history['val_acc']
         loss = history.history['loss']
@@ -117,17 +101,45 @@ class Image_Model(model_select):
         ax2.plot(epochs, val_loss, 'b', label='Validation loss')
         ax2.set_title('Training and Validation loss')
         ax2.legend()
+
         plt.show()
+        y = np.argmax(true_sample, axis=1)
+        ypre = np.argmax(predicted_sample, axis=1)
+        # self.calculate_ap(true_sample,predicted_sample)
+        confm = self.cm_plot(y, ypre)
 
-    def model_load(self, load_model=None):
-        if load_model == 'mobilenet':
-            from keras.utils.generic_utils import CustomObjectScope
-            import keras
+        confm.show()
 
-            with CustomObjectScope({'relu6': keras.applications.mobilenet.relu6,
-                                    'DepthwiseConv2D': keras.applications.mobilenet.DepthwiseConv2D}):
-                model = load_model(self.model_save_path)
-        else:
-            model = load_model(self.model_save_path)
+    def model_load(self):
+        model = load_model(self.model_save_path)
         model.summary()
         return model
+
+    def cm_plot(self, y, yp):
+
+        cm = confusion_matrix(y, yp)  # 混淆矩阵
+        plt.matshow(cm, cmap=plt.cm.Greens)  # 画混淆矩阵图，配色风格使用cm.Greens，更多风格请参考官网。
+        plt.colorbar()  # 颜色标签
+        for x in range(len(cm)):  # 数据标签
+            for y in range(len(cm)):
+                plt.annotate(cm[x, y], xy=(x, y), horizontalalignment='center', verticalalignment='center')
+        plt.ylabel('True label')  # 坐标轴标签
+        plt.xlabel('Predicted label')  # 坐标轴标签
+        return plt
+
+    def calculate_ap(self, labels, outputs):
+        cnt = 0
+        ap = 0.
+        labels = np.array(labels)
+        outputs = np.array(outputs)
+
+        for label, output in zip(labels, outputs):
+            for lb, op in zip(label, output):
+                op_argsort = np.argsort(op)[::-1]
+                lb_int = int(lb)
+                ap += 1.0 / (1 + list(op_argsort).index(lb_int))
+                cnt += 1
+        AP = ap
+        AP_cnt = cnt
+        map = AP / AP_cnt
+        print("on this set mAP:", map)

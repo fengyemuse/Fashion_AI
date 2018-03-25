@@ -69,7 +69,7 @@ class image_process(model_para):
         rangeh = (h - random_crop_size[1]) // 2
         offsetw = 0 if rangew == 0 else np.random.randint(rangew)
         offseth = 0 if rangeh == 0 else np.random.randint(rangeh)
-        return x[offsetw:offsetw + random_crop_size[0], offseth:offseth + random_crop_size[1], :]
+        return x[offsetw:offsetw+random_crop_size[0], offseth:offseth+random_crop_size[1],:]
 
     def image_dataGen(self, directory, target_size, batch_size, data_augmentation=False):
         '''

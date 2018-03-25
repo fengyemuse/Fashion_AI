@@ -4,10 +4,13 @@ import os
 
 class model_para:
     def __init__(self):
-        self.input_shape = (140, 140, 3)
-        self.batch_size = 4
-        self.steps_per_epoch = 100
-        self.epoch = 3
+        self.input_shape = (192, 192, 3)
+        self.train_batch_size = 16
+        self.test_batch_size = 100
+        self.val_batch_size = 100
+
+        self.steps_per_epoch = 256
+        self.epoch = 32
         self.label_types = 'categorical'  # 'categorical','binary'
         self.model_name = ('VGG16', 'IncetionResNetV2', 'InceptionV3', 'MobileNet')
         # 目前可以调用这几个模型，后面可以继续添加
