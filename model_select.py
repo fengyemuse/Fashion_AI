@@ -56,9 +56,6 @@ class model_select(model_para):
                           metrics=['acc'])
         else:  # 多分类
             model.add(layers.Dense(len(self.labels), activation='softmax'))
-            # model.compile(loss='categorical_crossentropy',
-            #               optimizer=optimizers.RMSprop(lr=2e-3),
-            #               metrics=['acc'])
             sgd = optimizers.SGD(lr=1e-3, momentum=0.9, decay=1e-3, nesterov=False)
             model.compile(loss='categorical_crossentropy',
                           optimizer=sgd,
@@ -141,8 +138,9 @@ class model_select(model_para):
         model.add(layers.Conv2D(len(self.labels), (1, 1), padding='same', name='conv_preds'))
         model.add(layers.Activation('softmax', name='act_softmax'))
         model.add(layers.Reshape((len(self.labels),), name='reshape_2'))
+
         model.compile(loss='categorical_crossentropy',
-                      optimizer=optimizers.adam(lr=1e-3), metrics=['acc'])
+                      optimizer=optimizers.adam(lr=2e-3), metrics=['acc'])
         return model
 
     def fine_tune_layers(self, trainable_layer, conv_base):

@@ -4,7 +4,7 @@ import os
 
 class model_para:
     def __init__(self):
-        self.input_shape = (192, 192, 3)
+        self.input_shape = (224, 224, 3)
         self.train_batch_size = 16
         self.test_batch_size = 100
         self.val_batch_size = 100
@@ -14,12 +14,14 @@ class model_para:
         self.label_types = 'categorical'  # 'categorical','binary'
         self.model_name = ('VGG16', 'IncetionResNetV2', 'InceptionV3', 'MobileNet')
         # 目前可以调用这几个模型，后面可以继续添加
-        self.dirs = ['train', 'validation', 'test']
+        temp = str(self.input_shape[0]) + '_' + str(self.input_shape[1])
+        # 数据文件后缀加入图像大小，这样就不用反复训练了
+        self.dirs = ['train' + temp, 'validation' + temp, 'test' + temp]
         self.origin_dir = os.path.split(__file__)[0] \
                           + '/data/warmup/Images/skirt_length_labels/'
         self.annotation_path = os.path.split(__file__)[0] \
                                + '/data/warmup/Annotations/skirt_length_labels.csv'
-        self.model_save_path = 'Fashion_AI.h5'
+        self.model_save_path = 'Fashion_AI.h5'  # 默认模型存储路径，可以在Model文件里面修改
         self.df = pd.read_csv(self.annotation_path, header=None)
         self.df.columns = ('picture', 'tpyes', 'labels')
         self.labels = '/' + self.df['labels'].unique()

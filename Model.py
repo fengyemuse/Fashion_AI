@@ -1,5 +1,5 @@
 from keras.models import load_model
-from data_process import image_process
+from data_process import Image_process
 from model_select import model_select
 from sklearn.metrics import confusion_matrix  # 导入混淆矩阵函数
 import matplotlib.pyplot as plt
@@ -8,7 +8,6 @@ import numpy as np
 
 
 class Image_Model(model_select):
-
     def create_model(self, base_model=None):
         '''
         :param base_model: 是否采用迁移学习
@@ -26,28 +25,32 @@ class Image_Model(model_select):
 
         if base_model == 'VGG16':
             model = self.VGG16()
+            self.model_save_path = 'VGG16.h5'
 
         elif base_model == 'IncetionResNetV2':
             model = self.IncetionResNetV2()
+            self.model_save_path = 'IncetionResNetV2.h5'
 
         elif base_model == 'InceptionV3':
             model = self.InceptionV3()
+            self.model_save_path = 'InceptionV3.h5'
 
         elif base_model == 'MobileNet':
             model = self.MobileNet()
+            self.model_save_path = 'MobileNet.h5'
         else:
             model = self.default_model()
 
         model.summary()
         return model
 
-    def train_model(self, model, is_augumente=False, is_image_processed=False):
+    def train_model(self, model, is_augumente=False):
         train_dir = os.path.join(self.origin_dir, self.dirs[0])
         validate_dir = os.path.join(self.origin_dir, self.dirs[1])
         test_dir = os.path.join(self.origin_dir, self.dirs[2])
-        image_processor = image_process()
-        if not is_image_processed:
-            image_processor.annotate_image()
+        image_processor = Image_process()
+
+        image_processor.image_process()
 
         train_generator = image_processor.image_dataGen(train_dir,
                                                         batch_size=self.train_batch_size,
@@ -110,19 +113,29 @@ class Image_Model(model_select):
 
         confm.show()
 
-    def model_load(self):
-        model = load_model(self.model_save_path)
+    def model_load(self, model_name):
+        from keras.utils.generic_utils import CustomObjectScope
+        import keras
+        if model_name == 'MobileNet':
+            with CustomObjectScope({'relu6': keras.applications.mobilenet.relu6,
+                                    'DepthwiseConv2D': keras.applications.mobilenet.DepthwiseConv2D}):
+                model = load_model(self.model_save_path)
+        else:
+            model = load_model(self.model_save_path)
         model.summary()
         return model
 
     def cm_plot(self, y, yp):
 
         cm = confusion_matrix(y, yp)  # 混淆矩阵
-        plt.matshow(cm, cmap=plt.cm.Greens)  # 画混淆矩阵图，配色风格使用cm.Greens，更多风格请参考官网。
+        plt.matshow(cm, cmap=plt.cm.Greens)
+        # 画混淆矩阵图，配色风格使用cm.Greens，更多风格请参考官网。
         plt.colorbar()  # 颜色标签
         for x in range(len(cm)):  # 数据标签
             for y in range(len(cm)):
-                plt.annotate(cm[x, y], xy=(x, y), horizontalalignment='center', verticalalignment='center')
+                plt.annotate(cm[x, y], xy=(x, y),
+                             horizontalalignment='center',
+                             verticalalignment='center')
         plt.ylabel('True label')  # 坐标轴标签
         plt.xlabel('Predicted label')  # 坐标轴标签
         return plt

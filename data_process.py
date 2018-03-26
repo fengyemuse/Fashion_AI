@@ -5,27 +5,9 @@ import os
 import numpy as np
 
 
-class image_process(model_para):
+class Image_process(model_para):
 
-    def create_file(self, file_name):
-        datafile = os.path.join(self.origin_dir, file_name)
-        if not os.path.exists(datafile):
-            os.makedirs(datafile)
-        return datafile
-
-    def copy_image(self, images, path):
-        for image in images:
-            src = os.path.join(self.origin_dir, image)
-            dst = os.path.join(path, image)
-            with Image.open(src) as img:
-                img = img.resize((self.input_shape[0], self.input_shape[1]), Image.ANTIALIAS)
-                img.save(dst)
-
-    def annotate_image(self):
-
-        file_paths = dict()
-        for file in self.files:
-            file_paths[file] = self.create_file(file)
+    def _annotate_image(self):
         labels_distribution = self.df['labels'].value_counts()
         print('数据类别分布：\n', labels_distribution)
         labels = labels_distribution.index
@@ -62,6 +44,27 @@ class image_process(model_para):
                 self.copy_image(validate_image, validate_path)
                 self.copy_image(train_image, train_path)
 
+    def copy_image(self, images, path):
+        for image in images:
+            src = os.path.join(self.origin_dir, image)
+            dst = os.path.join(path, image)
+            with Image.open(src) as img:
+                img = img.resize((self.input_shape[0], self.input_shape[1]), Image.ANTIALIAS)
+                img.save(dst)
+
+    def image_process(self):
+        is_annotate_image = False
+        for file in self.files:
+            datafile = os.path.join(self.origin_dir, file)
+            if not os.path.exists(datafile):
+                os.makedirs(datafile)
+                is_annotate_image = True
+            else:
+                is_annotate_image = False
+                break  # 数据文件如果已经存在，就没必要继续对数据进行处理了
+        if is_annotate_image:
+            self._annotate_image()
+
     def random_crop(x, random_crop_size, sync_seed=None, **kwargs):
         np.random.seed(sync_seed)
         w, h = x.shape[0], x.shape[1]
@@ -69,7 +72,7 @@ class image_process(model_para):
         rangeh = (h - random_crop_size[1]) // 2
         offsetw = 0 if rangew == 0 else np.random.randint(rangew)
         offseth = 0 if rangeh == 0 else np.random.randint(rangeh)
-        return x[offsetw:offsetw+random_crop_size[0], offseth:offseth+random_crop_size[1],:]
+        return x[offsetw:offsetw + random_crop_size[0], offseth:offseth + random_crop_size[1], :]
 
     def image_dataGen(self, directory, target_size, batch_size, data_augmentation=False):
         '''
