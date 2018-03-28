@@ -43,6 +43,8 @@ class model_select(model_para):
         conv_base = VGG16(weights='imagenet',
                           include_top=False,
                           input_shape=self.input_shape)
+        print('VGG16架构:\n')
+        conv_base.summary()
         conv_base = self.fine_tune_layers('block5_conv1', conv_base)
         model.add(conv_base)
         model.add(layers.Flatten())
@@ -69,6 +71,8 @@ class model_select(model_para):
         conv_base = InceptionResNetV2(include_top=False,
                                       weights='imagenet',
                                       input_shape=self.input_shape)
+        print('IncetionResNetV2:\n')
+        conv_base.summary()
         model.add(conv_base)
         model.add(layers.Flatten())
         model.add(layers.Dropout(0.5))
@@ -96,6 +100,8 @@ class model_select(model_para):
         conv_base = InceptionV3(include_top=False,
                                 weights='imagenet',
                                 input_shape=self.input_shape)
+        print('InceptionV3:\n')
+        conv_base.summary()
         model.add(conv_base)
         model.add(layers.Flatten())
         model.add(layers.Dropout(0.5))
@@ -126,6 +132,8 @@ class model_select(model_para):
                               input_shape=self.input_shape,
                               pooling='max',
                               alpha=alpha)
+        print('MobileNet:\n')
+        conv_base.summary()
         '''
         alpha: 控制网络的宽度：
                   如果alpha<1，则同比例的减少每层的滤波器个数
