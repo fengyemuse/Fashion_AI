@@ -25,7 +25,7 @@ class model_para:
         df = pd.read_csv(self.annotation_path, header=None)
         df.columns = ('picture', 'tpyes', 'labels')
         # self.labels = '/' + self.df['labels'].unique()
-        self.labels = ['/nnynnn', '/nnnnyn', '/nynnnn', '/nnnnny', '/nnnynn']
+        self.labels = ['nnynnn', 'nnnnyn', 'nynnnn', 'nnnnny', 'nnnynn']
         self.df = df[df['labels'].isin(self.labels)]  # 这样可以有效筛选样本
-        self.files = [x + y for x in self.dirs for y in self.labels]
+        self.files = [x + '/' + y for x in self.dirs for y in self.labels]
         self.data_split_ratio = [0.7, 0.15, 0.15]  # 训练集，验证集，测试集
