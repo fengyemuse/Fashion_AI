@@ -24,7 +24,6 @@ class model_para:
         self.model_save_path = 'Fashion_AI.h5'  # 默认模型存储路径，可以在Model文件里面修改
         self.df = pd.read_csv(self.annotation_path, header=None)
         self.df.columns = ('picture', 'tpyes', 'labels')
-        # self.labels = '/' + self.df['labels'].unique()
-        self.labels = ['/nnynnn', '/nnnnyn', '/nynnnn', '/nnnnny', '/nnnynn']
+        self.labels = '/' + self.df['labels'].unique()
         self.files = [x + y for x in self.dirs for y in self.labels]
         self.data_split_ratio = [0.7, 0.15, 0.15]  # 训练集，验证集，测试集
