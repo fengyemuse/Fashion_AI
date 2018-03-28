@@ -65,13 +65,21 @@ class Image_Model(model_select):
                                                        target_size=(self.input_shape[0], self.input_shape[1]),
                                                        data_augmentation=False
                                                        )
+        train_images_num = image_processor.count_images(self.dirs[0])
+        validate_images_num = image_processor.count_images(self.dirs[1])
+        test_images_num = image_processor.count_images(self.dirs[2])
+        print("训练集数量:", train_images_num)
+        print('验证集数量：', validate_images_num)
+        print('测试集数量：', test_images_num)
+        print('分类个数：',len(self.labels))
 
         history = model.fit_generator(train_generator,
                                       steps_per_epoch=self.steps_per_epoch,
                                       epochs=self.epoch,
                                       validation_data=validation_generator,
-                                      validation_steps=20)
-        test_loss, test_acc = model.evaluate_generator(test_generator, steps=20)
+                                      validation_steps=round(validate_images_num / self.val_batch_size))
+        test_loss, test_acc = model.evaluate_generator(test_generator,
+                                                       steps=round(test_images_num / self.test_batch_size))
         print('test_loss:', test_loss)
         print('test_acc', test_acc)
         model.save(self.model_save_path)
@@ -116,12 +124,14 @@ class Image_Model(model_select):
     def model_load(self, model_name):
         from keras.utils.generic_utils import CustomObjectScope
         import keras
+        model_path = model_name + '.h5'
         if model_name == 'MobileNet':
             with CustomObjectScope({'relu6': keras.applications.mobilenet.relu6,
                                     'DepthwiseConv2D': keras.applications.mobilenet.DepthwiseConv2D}):
-                model = load_model(self.model_save_path)
+
+                model = load_model(model_path)
         else:
-            model = load_model(self.model_save_path)
+            model = load_model(model_path)
         model.summary()
         return model
 

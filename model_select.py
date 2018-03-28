@@ -120,7 +120,7 @@ class model_select(model_para):
     def MobileNet(self):
         model = models.Sequential()
         from keras.applications import MobileNet
-        alpha = 0.5
+        alpha = 0.75
         conv_base = MobileNet(include_top=False,
                               weights='imagenet',
                               input_shape=self.input_shape,
@@ -134,7 +134,7 @@ class model_select(model_para):
         '''
         model.add(conv_base)
         model.add(layers.Reshape((1, 1, int(1024 * alpha))))
-        model.add(layers.Dropout(1e-3))
+        model.add(layers.Dropout(0.5))  # 以前是1e-3，但是我觉得这个概率太小了，不利于泛化
         model.add(layers.Conv2D(len(self.labels), (1, 1), padding='same', name='conv_preds'))
         model.add(layers.Activation('softmax', name='act_softmax'))
         model.add(layers.Reshape((len(self.labels),), name='reshape_2'))

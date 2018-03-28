@@ -52,6 +52,14 @@ class Image_process(model_para):
                 img = img.resize((self.input_shape[0], self.input_shape[1]), Image.ANTIALIAS)
                 img.save(dst)
 
+    def count_images(self, file_name):
+        path = os.path.join(self.origin_dir, file_name)
+        num = 0
+        for label_file in os.listdir(path):
+            label_path = os.path.join(path, label_file)
+            num += len(os.listdir(label_path))
+        return num
+
     def image_process(self):
         is_annotate_image = False
         for file in self.files:
@@ -84,11 +92,11 @@ class Image_process(model_para):
         '''
         if data_augmentation:
             datagen = ImageDataGenerator(rescale=1.0 / 255,
-                                         rotation_range=40,
+                                         rotation_range=10,
                                          width_shift_range=0.2,
                                          height_shift_range=0.2,
-                                         shear_range=0.2,
-                                         zoom_range=0.2,
+                                         shear_range=0.1,
+                                         zoom_range=0.1,
                                          horizontal_flip=True,
                                          fill_mode='nearest')
         else:

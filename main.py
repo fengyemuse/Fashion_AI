@@ -8,7 +8,6 @@ if not model_exist:
     model = model_class.create_model(base_model='MobileNet')
     history, true_sample, predicted_sample = model_class.train_model(model=model, is_augumente=True)
 
-
     model_class.train_validation_result_plot(history, true_sample, predicted_sample)
 else:
-    model = model_class.model_load()
+    model = model_class.model_load('MobileNet')
